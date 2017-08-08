@@ -8,16 +8,17 @@ const moment =  require('moment-timezone');
 const upperPrice = 2500000000; // 2.5bil
 const util = require('util');
 const Async = require('async');
+const chromeLauncher = require('chrome-launcher');
 // const chotot_binhthanh = 'https://nha.chotot.com/tp-ho-chi-minh/quan-binh-thanh/mua-ban-nha-dat?f=p&page=1&sp=0';
 const chotot_binhthanh = 'https://nha.chotot.com/tp-ho-chi-minh/quan-binh-thanh/mua-ban-nha-dat?page=%i'
 const baseUrl = 'https://nha.chotot.com';
 
 moment().tz("Asia/Ho_Chi_Minh").format();
 
-function getPageContents(url) {
+function getPageContents(url, port) {
   console.log('working on ', url);
   return new Promise((resolve, reject) => {
-    CDP(client => {
+    CDP({port: port}, client => {
       const {Page, Runtime} = client;
 
       Page.loadEventFired(() => {
@@ -119,28 +120,16 @@ function fullUrl(shortUrl) {
   return `${baseUrl}${shortUrl}`;
 }
 
-
-
 function process() {
   console.log('processing ....');
   var q = Async.queue(function(page, callback) {
-      console.log('processing page#' + page);
-      getPageContents(util.format(chotot_binhthanh, page))
-        .then(html => {
-          return Promise.resolve(getTopicLinks(html));
-        })
-        .then(result => {
-          let filteredPrice = result.filter(item => item.price <= upperPrice);
-          console.log(filteredPrice);
-          callback(null);
-        })
-  }, 1);
+      processItem(util.format(chotot_binhthanh, page), callback);
+  }, 10);
 
     // assign a callback
   q.drain = function() {
       console.log('all items have been processed');
   };
-
 
   const pages = Array(10).fill().map((x,i)=> i + 1);
   pages.forEach(page => {
@@ -150,39 +139,51 @@ function process() {
   });
 }
 
+function processItem(url, cb) {
+  console.log('processing url: ' + url);
+  Async.waterfall([done => {
+      launchChrome(done);
+    },
+    (port, done) => {
+      getPageContents(url, port)
+        .then(html => {
+          return Promise.resolve(getTopicLinks(html));
+        })
+        .then(result => {
+          let filteredPrices = result.filter(item => item.price <= upperPrice);
+          // console.log(filteredPrices);
+          done(null, filteredPrices);
+        }).catch(err => {
+          done(err);
+        });
+    }], (err, result) => {
+      console.error(err);
+      console.log(result);
+      cb(err);
+    });
+  };
+  // getPageContents(util.format(chotot_binhthanh, page))
+  //   .then(html => {
+  //     return Promise.resolve(getTopicLinks(html));
+  //   })
+  //   .then(result => {
+  //     let filteredPrice = result.filter(item => item.price <= upperPrice);
+  //     console.log(filteredPrice);
+  //     callback(null);
+  //   })
+
+function launchChrome(cb) {
+  const chromeLauncher = require('chrome-launcher');
+
+  chromeLauncher.launch({
+    chromeFlags: ['--headless', '--disable-gpu']
+  }).then(chrome => {
+    console.log(`Chrome debugging port running on ${chrome.port}`);
+    cb(null, chrome.port);
+  }).catch(err => {
+    console.error(`Error launching chrome ${err}`);
+    cb(err);
+  }) ;
+}
+
 process();
-
-
-// Async.each(pages, function(page, callback) {
-//   getPageContents(util.format(chotot_binhthanh, page))
-//     .then(html => {
-//       return Promise.resolve(getTopicLinks(html)).reject(callback);
-//     })
-//     .then(result => {
-//       let filteredPrice = result.filter(item => item.price <= upperPrice);
-//       console.log(filteredPrice);
-//       callback(null);
-//     }).catch(err => {
-//       callback(err);
-//     })
-// });
-
-// for (let page = 1; page <= 10; page ++) {
-//   getPageContents(util.format(chotot_binhthanh, page))
-//     .then(html => {
-//       return Promise.resolve(getTopicLinks(html));
-//     })
-//     .then(result => {
-//       let filteredPrice = result.filter(item => item.price <= upperPrice);
-//       console.log(filteredPrice);
-//     });
-// }
-
-// getPageContents(chotot_binhthanh)
-//   .then(html => {
-//     return Promise.resolve(getTopicLinks(html));
-//   })
-//   .then(result => {
-//     let filteredPrice = result.filter(item => item.price <= upperPrice);
-//     console.log(filteredPrice);
-//   })
