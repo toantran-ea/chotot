@@ -1,4 +1,5 @@
 // https://medium.com/@ariklevliber/real-world-website-scraping-and-cvs-exporting-using-the-new-headless-chromium-cea3e5611388
+
 const scrapeIt = require('scrape-it');
 const CDP = require('chrome-remote-interface');
 const co = require('co');
@@ -15,10 +16,10 @@ const baseUrl = 'https://nha.chotot.com';
 
 moment().tz("Asia/Ho_Chi_Minh").format();
 
-function getPageContents(url, port) {
+function getPageContents(url, chromeInstance) {
   console.log('working on ', url);
   return new Promise((resolve, reject) => {
-    CDP({port: port}, client => {
+    CDP({port: chromeInstance.port}, client => {
       const {Page, Runtime} = client;
 
       Page.loadEventFired(() => {
@@ -26,18 +27,18 @@ function getPageContents(url, port) {
           Runtime.evaluate({expression: 'document.body.outerHTML'}).then((result) => {
             resolve(result.result.value);
             client.close();
+            chromeInstance.kill();
           });
         }, 3000);
       });
 
       // Enable events on domains we are interested in
-      Promise.all([
-        Page.enable()
-      ]).then(() => {
+      Page.enable().then(() => {
         return Page.navigate({url});
       });
     }).on('error', err => {
       console.error('getPageContents: cannot connect to browser', err);
+      chromeInstance.kill();
       reject();
     });
   });
@@ -144,14 +145,13 @@ function processItem(url, cb) {
   Async.waterfall([done => {
       launchChrome(done);
     },
-    (port, done) => {
-      getPageContents(url, port)
+    (chrome, done) => {
+      getPageContents(url, chrome)
         .then(html => {
           return Promise.resolve(getTopicLinks(html));
         })
         .then(result => {
           let filteredPrices = result.filter(item => item.price <= upperPrice);
-          // console.log(filteredPrices);
           done(null, filteredPrices);
         }).catch(err => {
           done(err);
@@ -162,15 +162,6 @@ function processItem(url, cb) {
       cb(err);
     });
   };
-  // getPageContents(util.format(chotot_binhthanh, page))
-  //   .then(html => {
-  //     return Promise.resolve(getTopicLinks(html));
-  //   })
-  //   .then(result => {
-  //     let filteredPrice = result.filter(item => item.price <= upperPrice);
-  //     console.log(filteredPrice);
-  //     callback(null);
-  //   })
 
 function launchChrome(cb) {
   const chromeLauncher = require('chrome-launcher');
@@ -179,7 +170,7 @@ function launchChrome(cb) {
     chromeFlags: ['--headless', '--disable-gpu']
   }).then(chrome => {
     console.log(`Chrome debugging port running on ${chrome.port}`);
-    cb(null, chrome.port);
+    cb(null, chrome);
   }).catch(err => {
     console.error(`Error launching chrome ${err}`);
     cb(err);
