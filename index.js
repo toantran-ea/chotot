@@ -11,7 +11,7 @@ const util = require('util');
 const Async = require('async');
 const chromeLauncher = require('chrome-launcher');
 // const chotot_binhthanh = 'https://nha.chotot.com/tp-ho-chi-minh/quan-binh-thanh/mua-ban-nha-dat?f=p&page=1&sp=0';
-const chotot_binhthanh = 'https://nha.chotot.com/tp-ho-chi-minh/quan-binh-thanh/mua-ban-nha-dat?page=%i'
+const chotot_binhthanh = 'https://nha.chotot.com/tp-ho-chi-minh/quan-binh-thanh/mua-ban-nha-dat?page=%d'
 const baseUrl = 'https://nha.chotot.com';
 
 moment().tz("Asia/Ho_Chi_Minh").format();
