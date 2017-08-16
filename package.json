@@ -14,11 +14,13 @@
     "chrome-launcher": "^0.4.0",
     "chrome-remote-interface": "^0.24.3",
     "co": "^4.6.0",
+    "config": "^1.26.2",
     "dotenv": "^4.0.0",
     "joi": "^10.6.0",
     "json2csv": "^3.11.0",
     "moment": "^2.18.1",
     "moment-timezone": "^0.5.13",
+    "mongoose": "^4.11.7",
     "scrape-it": "^3.3.2"
   },
   "devDependencies": {
