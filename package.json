@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start:dev": "NODE_ENV=development node index.js",
     "test": "standard"
   },
   "keywords": [],
@@ -16,11 +17,14 @@
     "co": "^4.6.0",
     "config": "^1.26.2",
     "dotenv": "^4.0.0",
+    "express": "^4.15.4",
+    "helmet": "^3.8.1",
     "joi": "^10.6.0",
     "json2csv": "^3.11.0",
     "moment": "^2.18.1",
     "moment-timezone": "^0.5.13",
     "mongoose": "^4.11.7",
+    "path": "^0.12.7",
     "scrape-it": "^3.3.2"
   },
   "devDependencies": {

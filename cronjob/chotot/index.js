@@ -126,10 +126,6 @@ exports = module.exports = {
   }
 }
 
-function getPhoneNumber (rawSMS) {
-  return rawSMS.split(':')[1]
-}
-
 function parseDate (rawDate) {
   const today = 'hôm nay'
   const yesterday = 'hôm qua'
